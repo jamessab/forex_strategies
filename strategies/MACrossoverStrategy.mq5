@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#include "Util.mqh"
+#include "../include/Util.mqh"
 
 input string InpSymbol = "EURUSD";
 input ENUM_TIMEFRAMES InpTimeFrame = PERIOD_CURRENT;
