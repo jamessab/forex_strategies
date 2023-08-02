@@ -1,11 +1,14 @@
 //+------------------------------------------------------------------+
 //|                                                  MACrossover.mqh |
-//|                                  Copyright 2023, MetaQuotes Ltd. |
+//|                                  Copyright 2023, James Sablatura |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2023, MetaQuotes Ltd."
+#property copyright "Copyright 2023, James Sablatura"
 #property link      "https://www.mql5.com"
 #property version   "1.00"
+#property description "A simple MA crossover strategy"
+
+// When the faster MA crosses above the slower MA then buy. When the faster MA moves below the slower MA then sell/
 
 #include "../include/Util.mqh"
 
