@@ -94,3 +94,4 @@ double Util::ComputeTakeProfit(string symbol, ENUM_ORDER_TYPE direction, double 
       return -1;
    }
 }
+
