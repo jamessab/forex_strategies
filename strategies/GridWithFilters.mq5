@@ -5,7 +5,7 @@
 #property description ""
 
 #include "../include/Util.mqh"
-//#include "../include/MoneyManagement/Grid.mqh"
+#include "../include/MoneyManagement/Grid.mqh"
 #include "../include/MoneyManagement/Pyramid.mqh"
 #include "../include/Filters/SpreadFilter.mqh"
 #include "../include/Filters/RSIFilter.mqh"
@@ -19,15 +19,14 @@ class GridWithFilters {
 
 private:
    Util util;
-   //Grid grid;
+   Grid grid;
    Pyramid pyramid;
    SpreadFilter spreadFilter;
    RSIFilter rsiFilter;
    StochFilter stochFilter;
    SupertrendFilter supertrendFilter;
-
-protected:
-
+   int gridPyramidMode;
+   
 public:
    int HandleOnInit();
    void HandleOnTick();
@@ -60,10 +59,10 @@ int GridWithFilters::HandleOnInit() {
       ExpertRemove();
    }
 
-   //if (grid.HandleOnInit() != INIT_SUCCEEDED) {
-   //   PrintFormat("Error initializing the grid in the GridWithFilters strategy. Exiting.");
-   //   ExpertRemove();
-   //}
+   if (grid.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the grid in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
 
    if (pyramid.HandleOnInit() != INIT_SUCCEEDED) {
       PrintFormat("Error initializing the pyramid in the GridWithFilters strategy. Exiting.");
@@ -81,8 +80,12 @@ void GridWithFilters::HandleOnTick() {
    Update();
 
    if (PositionsTotal() > 0) {
-      //grid.HandleGrid();
-      pyramid.HandlePyramid();
+      if (!pyramid.pyramidStarted) {
+         grid.HandleGrid();
+      }
+      if (!grid.gridStarted) {
+         pyramid.HandlePyramid();
+      }
       return;
    }
 
@@ -98,14 +101,15 @@ void GridWithFilters::HandleOnTick() {
          spreadFilter.passes()) {
       PrintFormat("BUYING: bid: %lf, ask: %lf", util.m_symbol.Bid(), util.m_symbol.Ask());
    
-      //double lots = grid.FindLotSize();
-      double lots = pyramid.FindLotSize(POSITION_TYPE_BUY);
+      double lots = grid.FindLotSize();
+//      double lots = pyramid.FindLotSize(POSITION_TYPE_BUY);
+      
       if (!util.m_trade.Buy(lots, InpSymbol, util.m_symbol.Ask(), 0, 0 )) {
          PrintFormat("Invalid buy order: %d", GetLastError());
          return;
       }
-      
-      //grid.originalLotSize = lots;
+
+      grid.originalLotSize = lots;
    } 
    else if ( 
              ((InpUseSupertrendFilter && supertrendFilter.isBearish()) || !InpUseSupertrendFilter) &&
@@ -114,13 +118,13 @@ void GridWithFilters::HandleOnTick() {
              spreadFilter.passes()) {
       PrintFormat("SELLING: ask: %lf, ask: %lf", util.m_symbol.Ask(), util.m_symbol.Ask());
    
-      //double lots = grid.FindLotSize();
-      double lots = pyramid.FindLotSize(POSITION_TYPE_SELL);
+      double lots = grid.FindLotSize();
+      //double lots = pyramid.FindLotSize(POSITION_TYPE_SELL);
       if (!util.m_trade.Sell(lots, InpSymbol, util.m_symbol.Bid(), 0, 0)) {
          PrintFormat("Invalid sell order: %d", GetLastError());
          return;
       }
-      //grid.originalLotSize = lots;  
+      grid.originalLotSize = lots;  
    }
 }
 
