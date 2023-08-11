@@ -5,32 +5,33 @@
 #property description ""
 
 #include "../include/Util.mqh"
-#include "../include/MoneyManagement/Grid.mqh"
+//#include "../include/MoneyManagement/Grid.mqh"
+#include "../include/MoneyManagement/Pyramid.mqh"
 #include "../include/Filters/SpreadFilter.mqh"
+#include "../include/Filters/RSIFilter.mqh"
+#include "../include/Filters/StochFilter.mqh"
+#include "../include/Filters/SupertrendFilter.mqh"
 
 input string InpSymbol = "EURUSD";
 input ENUM_TIMEFRAMES InpTimeframe = PERIOD_CURRENT;
-//input double InpLots = 0.01;
-
-input int InpRSIPeriod = 14;
-input int InpRSIThreshold = 20;
 
 class GridWithFilters {
 
 private:
    Util util;
-   Grid grid;
+   //Grid grid;
+   Pyramid pyramid;
    SpreadFilter spreadFilter;
-
-   int handleRSI;
-   double bufferRSI[], currRSI;
+   RSIFilter rsiFilter;
+   StochFilter stochFilter;
+   SupertrendFilter supertrendFilter;
 
 protected:
 
 public:
    int HandleOnInit();
    void HandleOnTick();
-   void UpdateIndicators();
+   void Update();
 };
 
 GridWithFilters strategy;
@@ -39,11 +40,36 @@ GridWithFilters strategy;
 //|                                                                  |
 //+------------------------------------------------------------------+
 int GridWithFilters::HandleOnInit() {
-   ArraySetAsSeries(bufferRSI, true);
+   if (rsiFilter.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the rsiFilter in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
    
-   grid.SetRSIThreshold(InpRSIThreshold);
+   if (stochFilter.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the stochFilter in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
    
-   handleRSI = iRSI(InpSymbol, InpTimeframe, InpRSIPeriod, PRICE_CLOSE);
+   if (supertrendFilter.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the supertrend in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
+      
+   if (spreadFilter.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the spreadFilter in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
+
+   //if (grid.HandleOnInit() != INIT_SUCCEEDED) {
+   //   PrintFormat("Error initializing the grid in the GridWithFilters strategy. Exiting.");
+   //   ExpertRemove();
+   //}
+
+   if (pyramid.HandleOnInit() != INIT_SUCCEEDED) {
+      PrintFormat("Error initializing the pyramid in the GridWithFilters strategy. Exiting.");
+      ExpertRemove();
+   }
+   
    return INIT_SUCCEEDED;
 }
 
@@ -52,10 +78,11 @@ void GridWithFilters::HandleOnTick() {
 
    util.m_symbol.RefreshRates();
 
-   UpdateIndicators();
+   Update();
 
    if (PositionsTotal() > 0) {
-      grid.HandleGrid();
+      //grid.HandleGrid();
+      pyramid.HandlePyramid();
       return;
    }
 
@@ -64,42 +91,48 @@ void GridWithFilters::HandleOnTick() {
    }
 
    // If here, we haven't entered any trades
-   if (currRSI <= InpRSIThreshold) {
+   if ( 
+        ((InpUseSupertrendFilter && supertrendFilter.isBullish()) || !InpUseSupertrendFilter) && 
+        ((InpUseRSIFilter && rsiFilter.isOversold()) || !InpUseRSIFilter) &&
+        ((InpUseStochFilter && stochFilter.isOversold()) || !InpUseStochFilter) &&
+         spreadFilter.passes()) {
       PrintFormat("BUYING: bid: %lf, ask: %lf", util.m_symbol.Bid(), util.m_symbol.Ask());
    
-      double lots = grid.FindLotSize();
+      //double lots = grid.FindLotSize();
+      double lots = pyramid.FindLotSize(POSITION_TYPE_BUY);
       if (!util.m_trade.Buy(lots, InpSymbol, util.m_symbol.Ask(), 0, 0 )) {
          PrintFormat("Invalid buy order: %d", GetLastError());
          return;
       }
       
-      grid.originalLotSize = lots;
-
-   } else if (currRSI >= 100 - InpRSIThreshold) {
+      //grid.originalLotSize = lots;
+   } 
+   else if ( 
+             ((InpUseSupertrendFilter && supertrendFilter.isBearish()) || !InpUseSupertrendFilter) &&
+             ((InpUseRSIFilter && rsiFilter.isOverbought()) || !InpUseRSIFilter) &&
+             ((InpUseStochFilter && stochFilter.isOverbought()) || !InpUseStochFilter) &&
+             spreadFilter.passes()) {
       PrintFormat("SELLING: ask: %lf, ask: %lf", util.m_symbol.Ask(), util.m_symbol.Ask());
    
-      double lots = grid.FindLotSize();
+      //double lots = grid.FindLotSize();
+      double lots = pyramid.FindLotSize(POSITION_TYPE_SELL);
       if (!util.m_trade.Sell(lots, InpSymbol, util.m_symbol.Bid(), 0, 0)) {
          PrintFormat("Invalid sell order: %d", GetLastError());
          return;
       }
-      grid.originalLotSize = lots;
-   
+      //grid.originalLotSize = lots;  
    }
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void GridWithFilters::UpdateIndicators(void) {
-   if (CopyBuffer(handleRSI, 0, 0, 2, bufferRSI) <= 0) {
-      Print("Getting RSI is failed! Error ", GetLastError());
-      return;
-   }
+void GridWithFilters::Update(void) {
+   rsiFilter.Update();
+   stochFilter.Update();
+   supertrendFilter.Update();
    
-   currRSI = bufferRSI[1];
-   
-   grid.SetCurrRSI(currRSI);
+   pyramid.Update();
 }
 
 //+------------------------------------------------------------------+

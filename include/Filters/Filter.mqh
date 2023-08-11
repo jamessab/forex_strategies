@@ -9,5 +9,6 @@
 
 class Filter {
    public:
+      virtual int HandleOnInit();
       virtual bool passes();
 };
