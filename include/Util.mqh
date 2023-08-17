@@ -28,6 +28,7 @@ public:
    double pricePerPip;
    
    Util();   
+   void SetSymbol(string sym);
    bool NewBar(ENUM_TIMEFRAMES timeframe);
    bool NewBar2(ENUM_TIMEFRAMES timeframe);
    void CloseAllOrders();
@@ -159,6 +160,11 @@ double Util::GetPLInPoints() {
    }
    return pl;
 }
+
+void Util::SetSymbol(string sym) {
+   m_symbol.Name(sym); 
+}
+
 
 /*
 double Util::ConvertPointsToMoney(string symbol, double points) {

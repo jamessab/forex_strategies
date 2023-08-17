@@ -14,6 +14,7 @@
 #include "../include/Filters/RibbonFilter.mqh"
 
 input string InpSymbol = "EURUSD";
+
 input ENUM_TIMEFRAMES InpTimeframe = PERIOD_CURRENT;
 
 class GridWithFilters {
@@ -30,6 +31,8 @@ private:
    RibbonFilter ribbonFilter;
    
 public:
+
+   
    int HandleOnInit();
    void HandleOnTick();
    void Update();
@@ -48,12 +51,17 @@ int GridWithFilters::HandleOnInit() {
          InpUseStochIsIncreasingFilter == false && 
          InpUseSupertrendFilter == false &&
          InpUseRibbonPriceOutsideRibbonFilter == false &&
-         InpUseRibbonStackedFilter == false
+         InpUseRibbonStackedFilter == false &&
+         InpUseRibbonRecentlyNotStacked == false
       ) {
       PrintFormat("Error initializing the GridWithFilters strategy. All parameters were false.");
       ExpertRemove();
    }
    
+   if (InpUseRibbonRecentlyNotStacked && InpUseRibbonStackedFilter) {
+      ExpertRemove();
+   }
+
    if ((InpUseRSIFilter || InpUseRSIIsIncreasingFilter) && rsiFilter.HandleOnInit() != INIT_SUCCEEDED) {
       PrintFormat("Error initializing the rsiFilter in the GridWithFilters strategy. Exiting.");
       ExpertRemove();
@@ -79,7 +87,7 @@ int GridWithFilters::HandleOnInit() {
       ExpertRemove();
    }
 
-   if ((InpUseRibbonPriceOutsideRibbonFilter || InpUseRibbonStackedFilter) && ribbonFilter.HandleOnInit() != INIT_SUCCEEDED) {
+   if ((InpUseRibbonPriceOutsideRibbonFilter || InpUseRibbonStackedFilter || InpUseRibbonRecentlyNotStacked) && ribbonFilter.HandleOnInit() != INIT_SUCCEEDED) {
       PrintFormat("Error initializing the ribbonFilter in the GridWithFilters strategy. Exiting.");
       ExpertRemove();
    }
@@ -95,10 +103,6 @@ int GridWithFilters::HandleOnInit() {
 
 void GridWithFilters::HandleOnTick() {
 
-   //if (!util.NewBar2(PERIOD_M1)) {
-   //   return;
-   //}
-   
    util.m_symbol.RefreshRates();
 
    Update();
@@ -126,6 +130,7 @@ void GridWithFilters::HandleOnTick() {
         ((InpUseStochIsIncreasingFilter && stochFilter.isIncreasing()) || !InpUseStochIsIncreasingFilter) &&
         ((InpUseRibbonPriceOutsideRibbonFilter && ribbonFilter.IsPriceBelowRibbon()) || !InpUseRibbonPriceOutsideRibbonFilter) &&
         ((InpUseRibbonStackedFilter && ribbonFilter.IsRibbonStackedBearish()) || !InpUseRibbonStackedFilter) &&
+        ((InpUseRibbonRecentlyNotStacked && ribbonFilter.IsRecentlyNotStacked()) || !InpUseRibbonRecentlyNotStacked) &&
          spreadFilter.passes()) {
       PrintFormat("BUYING: bid: %lf, ask: %lf", util.m_symbol.Bid(), util.m_symbol.Ask());
    
@@ -146,6 +151,7 @@ void GridWithFilters::HandleOnTick() {
              ((InpUseStochIsIncreasingFilter && !stochFilter.isIncreasing()) || !InpUseStochIsIncreasingFilter) &&
              ((InpUseRibbonPriceOutsideRibbonFilter && ribbonFilter.IsPriceAboveRibbon()) || !InpUseRibbonPriceOutsideRibbonFilter) &&
              ((InpUseRibbonStackedFilter && ribbonFilter.IsRibbonStackedBullish()) || !InpUseRibbonStackedFilter) &&
+             ((InpUseRibbonRecentlyNotStacked && ribbonFilter.IsRecentlyNotStacked()) || !InpUseRibbonRecentlyNotStacked) &&
              spreadFilter.passes()) {
       PrintFormat("SELLING: ask: %lf, ask: %lf", util.m_symbol.Ask(), util.m_symbol.Ask());
    

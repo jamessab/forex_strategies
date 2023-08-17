@@ -12,7 +12,7 @@
 
 #include "../include/Util.mqh"
 
-input string InpSymbol = "EURUSD";
+input string symbol = "EURUSD";
 input ENUM_TIMEFRAMES InpTimeFrame = PERIOD_CURRENT;
 input int InpStoplossInPoints = 100;
 input int InpTakeProfitInPoints = 100;
@@ -43,13 +43,13 @@ int MACrossoverStrategy::HandleOnInit() {
    ArraySetAsSeries(bufferMA1, true);
    ArraySetAsSeries(bufferMA2, true);
    
-   handleMA1 = iMA(InpSymbol, InpTimeFrame, InpMAPeriod1, 1, InpMAMode1, PRICE_CLOSE);
+   handleMA1 = iMA(symbol, InpTimeFrame, InpMAPeriod1, 1, InpMAMode1, PRICE_CLOSE);
    if (handleMA1 == INVALID_HANDLE) {
       printf("Error creating handleMA1 indicator. Error: %d", GetLastError());
       return false;
    }
 
-   handleMA2 = iMA(InpSymbol, InpTimeFrame, InpMAPeriod2, 1, InpMAMode2, PRICE_CLOSE);
+   handleMA2 = iMA(symbol, InpTimeFrame, InpMAPeriod2, 1, InpMAMode2, PRICE_CLOSE);
    if (handleMA2 == INVALID_HANDLE) {
       printf("Error creating handleMA2 indicator. Error: %d", GetLastError());
       return false;
@@ -70,10 +70,10 @@ void MACrossoverStrategy::HandleOnTick() {
    {
       util.m_trade.Buy(
          InpLots, 
-         InpSymbol, 
+         symbol, 
          util.m_symbol.Ask(), 
-         util.ComputeStoploss(InpSymbol, ORDER_TYPE_BUY, InpStoplossInPoints), 
-         util.ComputeTakeProfit(InpSymbol, ORDER_TYPE_BUY, InpTakeProfitInPoints)
+         util.ComputeStoploss(symbol, ORDER_TYPE_BUY, InpStoplossInPoints), 
+         util.ComputeTakeProfit(symbol, ORDER_TYPE_BUY, InpTakeProfitInPoints)
       );
    }
    else if (bufferMA1[1] > bufferMA2[1] &&
@@ -81,10 +81,10 @@ void MACrossoverStrategy::HandleOnTick() {
    {
       util.m_trade.Sell(
          InpLots, 
-         InpSymbol, 
+         symbol, 
          util.m_symbol.Bid(), 
-         util.ComputeStoploss(InpSymbol, ORDER_TYPE_SELL, InpStoplossInPoints), 
-         util.ComputeTakeProfit(InpSymbol, ORDER_TYPE_SELL, InpTakeProfitInPoints)
+         util.ComputeStoploss(symbol, ORDER_TYPE_SELL, InpStoplossInPoints), 
+         util.ComputeTakeProfit(symbol, ORDER_TYPE_SELL, InpTakeProfitInPoints)
       );
    }
 }

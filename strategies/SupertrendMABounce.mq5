@@ -31,7 +31,7 @@ Exit Criteria:
 
 #include "../include/Util.mqh"
 
-input string InpSymbol = "EURUSD";
+input string symbol = "EURUSD";
 input ENUM_TIMEFRAMES InpTimeFrame = PERIOD_CURRENT;
 
 input double InpLots = 0.01;
@@ -68,19 +68,19 @@ int SupertrendMABounce::HandleOnInit() {
    ArraySetAsSeries(bufferSupertrend1, true);
    ArraySetAsSeries(bufferSupertrend2, true);
    
-   handleMA = iMA(InpSymbol, InpTimeFrame, InpMAPeriod, 0, MODE_EMA, PRICE_CLOSE);
+   handleMA = iMA(symbol, InpTimeFrame, InpMAPeriod, 0, MODE_EMA, PRICE_CLOSE);
    if (handleMA == INVALID_HANDLE) {
       printf("Error creating handleMA indicator. Error: %d", GetLastError());
       return false;
    }
 
-   handleSupertrend1 = iCustom(InpSymbol, InpTimeFrame, "Market/Supertrend Line", InpSupertrendPeriod1, InpSupertrendMultiplier1);
+   handleSupertrend1 = iCustom(symbol, InpTimeFrame, "Market/Supertrend Line", InpSupertrendPeriod1, InpSupertrendMultiplier1);
    if (handleSupertrend1 == INVALID_HANDLE) {
       printf("Error creating handleSupertrend indicator. Error: %d", GetLastError());
       return false;
    }
 
-   handleSupertrend2 = iCustom(InpSymbol, InpTimeFrame, "Market/Supertrend Line", InpSupertrendPeriod2, InpSupertrendMultiplier2);
+   handleSupertrend2 = iCustom(symbol, InpTimeFrame, "Market/Supertrend Line", InpSupertrendPeriod2, InpSupertrendMultiplier2);
    if (handleSupertrend2 == INVALID_HANDLE) {
       printf("Error creating handleSupertrend indicator. Error: %d", GetLastError());
       return false;
@@ -105,16 +105,16 @@ void SupertrendMABounce::HandleOnTick() {
 
    if (util.m_symbol.Ask() > bufferSupertrend1[1] && util.m_symbol.Ask() > bufferSupertrend2[1]) {
 
-      if (util.m_symbol.Ask() < bufferMA[0] && iClose(InpSymbol, InpTimeFrame, 1) > bufferMA[1]) {
+      if (util.m_symbol.Ask() < bufferMA[0] && iClose(symbol, InpTimeFrame, 1) > bufferMA[1]) {
 
-         PrintFormat("buying. bid: %f, low: %f, MA: %f, supertrend: %f, distance: %f", util.m_symbol.Bid(), iLow(InpSymbol, InpTimeFrame, 0), bufferMA[1], bufferSupertrend1[1], MathAbs(util.m_symbol.Bid()  - bufferSupertrend1[1]));
+         PrintFormat("buying. bid: %f, low: %f, MA: %f, supertrend: %f, distance: %f", util.m_symbol.Bid(), iLow(symbol, InpTimeFrame, 0), bufferMA[1], bufferSupertrend1[1], MathAbs(util.m_symbol.Bid()  - bufferSupertrend1[1]));
          double diff = util.m_symbol.Ask() - bufferSupertrend1[1];
          double sl = util.m_symbol.Ask() - (diff * InpStoplossMultipler);
          double tp = util.m_symbol.Ask() + (diff * InpTakeProfitMultipler);
       
          util.m_trade.Buy(
             InpLots, 
-            InpSymbol, 
+            symbol, 
             util.m_symbol.Ask(), 
             sl, 
             tp
@@ -123,16 +123,16 @@ void SupertrendMABounce::HandleOnTick() {
    }
    else if (util.m_symbol.Bid() < bufferSupertrend1[1] && util.m_symbol.Bid() < bufferSupertrend2[1]) {
    
-      if (util.m_symbol.Bid() > bufferMA[0] && iClose(InpSymbol, InpTimeFrame, 1) < bufferMA[1]) {
+      if (util.m_symbol.Bid() > bufferMA[0] && iClose(symbol, InpTimeFrame, 1) < bufferMA[1]) {
 
-         PrintFormat("selling. bid: %f, high: %f, MA: %f, supertrend: %f, distance: %f", util.m_symbol.Bid(), iHigh(InpSymbol, InpTimeFrame, 0), bufferMA[1], bufferSupertrend1[1], MathAbs(util.m_symbol.Bid()  - bufferSupertrend1[1]));
+         PrintFormat("selling. bid: %f, high: %f, MA: %f, supertrend: %f, distance: %f", util.m_symbol.Bid(), iHigh(symbol, InpTimeFrame, 0), bufferMA[1], bufferSupertrend1[1], MathAbs(util.m_symbol.Bid()  - bufferSupertrend1[1]));
          double diff = bufferSupertrend1[1] - util.m_symbol.Bid();
          double sl = util.m_symbol.Bid() + (diff * InpStoplossMultipler);
          double tp = util.m_symbol.Bid() - (diff * InpTakeProfitMultipler);
       
          util.m_trade.Sell(
             InpLots, 
-            InpSymbol, 
+            symbol, 
             util.m_symbol.Bid(), 
             sl, 
             tp
